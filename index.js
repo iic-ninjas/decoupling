@@ -20,6 +20,7 @@ window.addEventListener("resize", resizeCanvas, true);
 var units = [];
 var constraints = [];
 var messages = [];
+var numTotalMessages = 0;
 
 function v2(x, y) {
   return {
@@ -58,6 +59,8 @@ function sendMessage(sourceIdx, targetIdx, duration) {
     startTime: Date.now(),
     progress: 0
   });
+  numTotalMessages++;
+  document.getElementById("num_messages").textContent = numTotalMessages;
 }
 
 function constraintExists(idx1, idx2) {
@@ -308,6 +311,7 @@ function makeBadCode() {
   units = [];
   constraints = [];
   messages = [];
+  numTotalMessages = 0;
 
   for (var i = 0; i < 70; ++i) {
     units.push(v2(Math.random()*width/3 + width/3, Math.random()*height/3 + height/3));
@@ -333,6 +337,7 @@ function makeGoodCode() {
   units = [];
   constraints = [];
   messages = [];
+  numTotalMessages = 0;
 
   units.push(v2(width*0.5, height*0.1));
   makeChildren(1, 0, 3, width*0.5);
