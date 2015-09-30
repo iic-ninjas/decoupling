@@ -4,6 +4,7 @@ var width;
 var height;
 
 var useEvents = false;
+var badCode = true;
 
 function resizeCanvas() {
   canvas.width = window.innerWidth;
@@ -120,10 +121,14 @@ function drawEventMessage(sourceIdx, targetIdx, progress) {
 }
 
 function organize() {
-  for (var i = 0; i < units.length; ++i) {
-    units[i].x = (i % 7) * 50 + 200;
-    units[i].y = Math.floor(i / 7) * 50 + 200;
+  if (badCode) {
+    makeGoodCode();
+    document.getElementById("organize").textContent = "Bad code";
+  } else {
+    makeBadCode();
+    document.getElementById("organize").textContent = "Good code";
   }
+  badCode = !badCode;
 }
 
 function updateMessages() {
@@ -215,6 +220,55 @@ function resolveConstrains() {
   }
 }
 
+function spaceOut() {
+  for (var i = 0; i < units.length; ++i) {
+    for (var j = 0; j < units.length; ++j) {
+      if (j != i) {
+        var first = units[i];
+        var second = units[j];
+
+        var diff = v2(
+            first.x - second.x,
+            first.y - second.y
+        );
+
+        var diffLengthSq = diff.x*diff.x + diff.y*diff.y;
+        if (diffLengthSq < 225) {
+          var currentDistance = Math.sqrt(diffLengthSq);
+          var targetDistance = 15;
+          var moveBy = targetDistance - currentDistance;
+
+          if (currentDistance > 0) {
+            diff.x /= currentDistance;
+            diff.y /= currentDistance;
+            diff.x *= moveBy;
+            diff.y *= moveBy;
+          } else {
+            diff.x = 1;
+          }
+
+          var weight1 = 0.5;
+          var weight2 = 0.5;
+
+          if (i == draggedIdx) {
+            weight1 = 0;
+            weight2 = 1;
+          } else if (j == draggedIdx) {
+            weight1 = 1;
+            weight2 = 0;
+          }
+
+          first.x += diff.x*weight1;
+          first.y += diff.y*weight1;
+
+          second.x -= diff.x*weight2;
+          second.y -= diff.y*weight2;
+        }
+      }
+    }
+  }
+}
+
 function frame() {
   clear();
 
@@ -245,26 +299,58 @@ function frame() {
   if (!useEvents) {
     resolveConstrains();
   }
+  spaceOut();
 
   requestAnimationFrame(frame);
 }
 
-for (var i = 0; i < 70; ++i) {
-  units.push(v2(Math.random()*width/3 + width/3, Math.random()*height/3 + height/3));
-}
-organize();
+function makeBadCode() {
+  units = [];
+  constraints = [];
+  messages = [];
 
-for (var i = 0; i < units.length; ++i) {
-  var targetIdx;
-  var numConstraints = Math.floor(Math.random()*2)+1;
-  for (var c = 0; c < numConstraints; ++c) {
-    do {
-      targetIdx = Math.floor(Math.random()*units.length);
-    } while(constraintExists(i, targetIdx) || i == targetIdx);
-    makeConstraint(i, targetIdx);
+  for (var i = 0; i < 70; ++i) {
+    units.push(v2(Math.random()*width/3 + width/3, Math.random()*height/3 + height/3));
+  }
+  for (var i = 0; i < units.length; ++i) {
+    units[i].x = (i % 7) * 50 + 200;
+    units[i].y = Math.floor(i / 7) * 50 + 200;
+  }
+
+  for (var i = 0; i < units.length; ++i) {
+    var targetIdx;
+    var numConstraints = Math.floor(Math.random()*2)+1;
+    for (var c = 0; c < numConstraints; ++c) {
+      do {
+        targetIdx = Math.floor(Math.random()*units.length);
+      } while(constraintExists(i, targetIdx) || i == targetIdx);
+      makeConstraint(i, targetIdx);
+    }
   }
 }
 
+function makeGoodCode() {
+  units = [];
+  constraints = [];
+  messages = [];
+
+  units.push(v2(width*0.5, height*0.1));
+  makeChildren(1, 0, 3, width*0.5);
+}
+
+function makeChildren(level, parentIdx, numChildren, totalWidth) {
+  if (level == 5) { return; }
+  var uParent = units[parentIdx];
+  for (var i = 0; i < numChildren; ++i) {
+    var child = v2(uParent.x + i*(totalWidth/(numChildren-1)) - totalWidth/2, uParent.y + height*0.1);
+    units.push(child);
+    makeConstraint(parentIdx, units.length-1);
+    makeChildren(level+1, units.length-1, 3, totalWidth/numChildren);
+  }
+}
+
+
+makeBadCode();
 frame();
 
 var draggedIdx = -1;
